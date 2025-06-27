@@ -60,14 +60,25 @@ public class ImagePanel extends JPanel implements MouseWheelListener, MouseListe
     public void mouseClicked(MouseEvent e) {
     }
 
+    private Point panPoint = null;
+
     @Override
     public void mousePressed(MouseEvent e) {
 
+        panPoint = e.getPoint();
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
 
+        if (panPoint != null) {
+            Point m = e.getPoint();
+            double deltaX = (m.getX()-panPoint.x)/getWidth()*width, deltaY = (m.getY()-panPoint.y)/getHeight()*height;
+            pX -= deltaX;
+            pY -= deltaY;
+            panPoint = null;
+            Main.getGui().setNewImage(pX, pX+width, pY, pY+height);
+        }
     }
 
     @Override

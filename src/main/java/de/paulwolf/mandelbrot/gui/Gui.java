@@ -28,6 +28,8 @@ public class Gui extends JFrame {
 
     private void setNewImage() {
 
+        System.out.printf("xmin = %lf, xmax = %lf, ymin = %f, ymax = %f\n", xmin, xmax, ymin, ymax);
+
         BufferedImage image = imageRenderer.generateImage(this.sizeX, this.sizeY, this.xmin, this.xmax, this.ymin, this.ymax);
         imagePanel.setImage(image);
     }
@@ -42,9 +44,4 @@ public class Gui extends JFrame {
         this.setNewImage();
     }
 
-    public void setNewImage(int sizeX, int sizeY, double xmin, double xmax, double ymin, double ymax) {
-
-        BufferedImage image = imageRenderer.generateImage(sizeX, sizeY, xmin, xmax, ymin, ymax);
-        imagePanel.setImage(image);
-    }
 }
