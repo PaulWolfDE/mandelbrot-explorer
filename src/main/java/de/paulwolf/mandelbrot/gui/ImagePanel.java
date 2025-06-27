@@ -32,20 +32,28 @@ public class ImagePanel extends JPanel implements MouseWheelListener, MouseListe
         g.drawImage(image, 0, 0, this);
     }
 
+    private static final double ZOOM_FACTOR = 1.1;
+
+    public static double pX = -2, pY = -2;
+    public static double width = 4, height = 4;
+    public static double zoomLevel = 1;
+
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
 
-        double factor = switch(e.getWheelRotation()) {
-            case 1 -> Zoom.ZOOM_FACTOR;
-            case -1 -> 1/Zoom.ZOOM_FACTOR;
-            default -> throw new RuntimeException("Invalid zoom factor");
-        };
-        double newZoom =  Math.clamp(Zoom.zoomLevel*factor, Zoom.MIN_ZOOM, Zoom.MAX_ZOOM);
-        factor = newZoom/Zoom.zoomLevel; // Corrects, if zoom exceeds MIN or MAX.
-        Zoom.zoomLevel = newZoom;
+        double z = e.getPreciseWheelRotation() > 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
 
-        System.out.println(e.getWheelRotation());
-        Main.getGui().setNewImage(-2*Zoom.zoomLevel, 2*Zoom.zoomLevel, -2*Zoom.zoomLevel, 2*Zoom.zoomLevel);
+        Point m = e.getPoint();
+        double mX = m.getX()/getWidth()*width+pX, mY = m.getY()/getHeight()*height+pY;
+        double deltaX = (mX-pX)*z, deltaY = (mY-pY)*z;
+        pX = mX-deltaX;
+        pY = mY-deltaY;
+        width *= z;
+        height *= z;
+        zoomLevel *= z;
+
+        Main.getGui().setNewImage(pX, pX+width, pY, pY+height);
+
     }
 
     @Override
