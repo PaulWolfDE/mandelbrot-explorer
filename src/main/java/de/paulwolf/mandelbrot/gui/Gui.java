@@ -1,27 +1,50 @@
 package de.paulwolf.mandelbrot.gui;
 
-import de.paulwolf.mandelbrot.core.ImagePanel;
 import de.paulwolf.mandelbrot.core.ImageRenderer;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public class Gui extends JFrame {
 
     private final ImageRenderer imageRenderer = new ImageRenderer();
-    private int sizeX = 800, sizeY = 600;
+    private final ImagePanel imagePanel = new ImagePanel();
 
+    private int sizeX = 800, sizeY = 600;
+    private double xmin=-2, xmax=2, ymin=-2, ymax=2;
+
+    private double zoom = 1;
 
     public Gui() {
 
-        BufferedImage img = imageRenderer.generateImage(sizeX, sizeY, -2, 2, -2, 2);
-        ImagePanel imagePanel = new ImagePanel(img);
+        new ImagePanel();
+        this.setNewImage();
         this.add(imagePanel);
 
         this.setSize(sizeX, sizeY);
         this.setLocationRelativeTo(null);
-        this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    private void setNewImage() {
+
+        BufferedImage image = imageRenderer.generateImage(this.sizeX, this.sizeY, this.xmin, this.xmax, this.ymin, this.ymax);
+        imagePanel.setImage(image);
+    }
+
+    public void setNewImage(double xmin, double xmax, double ymin, double ymax) {
+
+        this.xmin = xmin;
+        this.xmax = xmax;
+        this.ymin = ymin;
+        this.ymax = ymax;
+
+        this.setNewImage();
+    }
+
+    public void setNewImage(int sizeX, int sizeY, double xmin, double xmax, double ymin, double ymax) {
+
+        BufferedImage image = imageRenderer.generateImage(sizeX, sizeY, xmin, xmax, ymin, ymax);
+        imagePanel.setImage(image);
     }
 }

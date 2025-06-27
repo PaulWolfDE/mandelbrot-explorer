@@ -5,8 +5,14 @@ import de.paulwolf.mandelbrot.gui.Gui;
 
 public class Main {
 
+    private static final Gui gui = new Gui();
+
     public static void main(String[] args) {
 
-        Gui gui = new Gui();
+        gui.setVisible(true);
+    }
+
+    public static Gui getGui() {
+        return gui;
     }
 }
