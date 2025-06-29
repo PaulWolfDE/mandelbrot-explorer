@@ -13,25 +13,14 @@ int argb(int a, int r, int g, int b)
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
-int main(int argc, char *argv[])
+SDL_Texture *tex;
+SDL_Renderer *ren;
+
+// scale: how many pixels represent 1 coordinate
+long double xmin = -2.5, ymin = -1.5, scale = 200, zoomFactor = 1.1;
+
+void repaint()
 {
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        SDL_Log("SDL_Init Error: %s", SDL_GetError());
-        return 1;
-    }
-
-    SDL_Window  *win = SDL_CreateWindow("Mandelbrot Explorer",
-                        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                        800, 600, SDL_WINDOW_SHOWN);
-    SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
-
-    SDL_Texture *tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 800, 600);
-
-    bool running = true;
-
-    // scale: how many pixels represent 1 coordinate
-    long double xmin = -2.5, ymin = -1.5, scale = 200;
-
     void *pixels;
     int pitch;
     SDL_LockTexture(tex, nullptr, &pixels, &pitch);
@@ -49,12 +38,49 @@ int main(int argc, char *argv[])
     SDL_UnlockTexture(tex);
     SDL_RenderCopy(ren, tex, nullptr, nullptr);
     SDL_RenderPresent(ren);
+}
+
+int main(int argc, char *argv[])
+{
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        SDL_Log("SDL_Init Error: %s", SDL_GetError());
+        return 1;
+    }
+
+    SDL_Window  *win = SDL_CreateWindow("Mandelbrot Explorer",
+                        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                        800, 600, SDL_WINDOW_SHOWN);
+    ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+    tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 800, 600);
+
+    bool running = true;
+    repaint();
 
     while (running) {
 
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = false;
+
+            if (e.type == SDL_MOUSEWHEEL) {
+
+                int mx, my;
+                SDL_GetMouseState(&mx, &my);
+
+                long double z = e.wheel.y > 0 ? zoomFactor : 1 / zoomFactor;
+
+                long double px = xmin + static_cast<long double>(mx) / scale;
+                long double py = ymin + static_cast<long double>(my) / scale;
+
+                long double dx = (px-xmin)/z, dy = (py-ymin)/z;
+
+                xmin = px-dx;
+                ymin = py-dy;
+
+                scale *= z;
+
+                repaint();
+            }
         }
     }
 

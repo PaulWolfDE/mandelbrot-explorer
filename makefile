@@ -1,6 +1,6 @@
 CC      := g++
 CFLAGS  := -Wall -std=c++20 $(shell pkg-config --cflags sdl2)
-LDFLAGS := $(shell pkg-config --libs sdl2)
+LDFLAGS := $(shell pkg-config --libs sdl2) -mconsole
 SRC     := $(wildcard src/*.cpp)
 OUT     := build/app.exe
 
