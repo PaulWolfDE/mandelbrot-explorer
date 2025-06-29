@@ -19,6 +19,9 @@ SDL_Renderer *ren;
 // scale: how many pixels represent 1 coordinate
 long double xmin = -2.5, ymin = -1.5, scale = 200, zoomFactor = 1.1;
 
+int panx=0, pany=0;
+bool isPanning = false;
+
 void repaint()
 {
     void *pixels;
@@ -80,6 +83,26 @@ int main(int argc, char *argv[])
                 scale *= z;
 
                 repaint();
+            }
+
+            if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT && !isPanning) {
+
+                isPanning = true;
+                panx = e.button.x;
+                pany = e.button.y;
+                std::cout << panx << " " << pany << std::endl;
+            }
+
+            if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT && isPanning) {
+
+                long double dx = (e.button.x - panx)/scale;
+                long double dy = (e.button.y - pany)/scale;
+
+                xmin -= dx;
+                ymin -= dy;
+
+                repaint();
+                isPanning = false;
             }
         }
     }
