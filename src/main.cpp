@@ -1,7 +1,7 @@
 #include <SDL.h>
-#include <complex>
 #include <iostream>
 #include <cmath>
+#include <thread>
 
 #include "mandelbrot.h"
 
@@ -17,10 +17,24 @@ SDL_Texture *tex;
 SDL_Renderer *ren;
 
 // scale: how many pixels represent 1 coordinate
-long double xmin = -2.5, ymin = -1.5, scale = 200, zoomFactor = 1.1;
+long double xmin = -2.5, ymin = -1.5, scale = 200, zoom_factor = 1.1, zoom_factor_inv = 1.0L / zoom_factor;
 
 int panx=0, pany=0;
 bool isPanning = false;
+
+void computeRows(int sy, int n_rows, Uint32 *px, int pitch32)
+{
+    for (int x = 0; x < WIDTH; x++) {
+
+        for (int y = sy; y < sy + n_rows; y++) {
+
+            int it = mandelbrot_iterations(xmin + static_cast<long double>(x) / scale, ymin + static_cast<long double>(y) / scale);
+            px[y * pitch32 + x] = argb(255, std::max(255-it*15, 0), std::max(255-it*15, 0), std::max(255-it*15, 0));
+        }
+    }
+}
+
+#define N_THREADS 8
 
 void repaint()
 {
@@ -30,13 +44,13 @@ void repaint()
     Uint32 *px = (Uint32*)pixels;
     int pitch32 = pitch / 4;
 
-    for (int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
+    std::thread threads[HEIGHT];
 
-            int it = mandelbrot_iterations(xmin + static_cast<long double>(x) / scale, ymin + static_cast<long double>(y) / scale);
-            px[y * pitch32 + x] = argb(255, std::max(255-it*15, 0), std::max(255-it*15, 0), std::max(255-it*15, 0));
-        }
-    }
+    for (int y = 0; y < HEIGHT; y += HEIGHT/N_THREADS)
+        threads[y] = std::thread(computeRows, y, HEIGHT/N_THREADS, px, pitch32);
+
+    for (int y = 0; y < HEIGHT; y += HEIGHT/N_THREADS)
+        threads[y].join();
 
     SDL_UnlockTexture(tex);
     SDL_RenderCopy(ren, tex, nullptr, nullptr);
@@ -70,7 +84,7 @@ int main(int argc, char *argv[])
                 int mx, my;
                 SDL_GetMouseState(&mx, &my);
 
-                long double z = e.wheel.y > 0 ? zoomFactor : 1 / zoomFactor;
+                long double z = e.wheel.y > 0 ? zoom_factor : zoom_factor_inv;
 
                 long double px = xmin + static_cast<long double>(mx) / scale;
                 long double py = ymin + static_cast<long double>(my) / scale;
@@ -90,7 +104,12 @@ int main(int argc, char *argv[])
                 isPanning = true;
                 panx = e.button.x;
                 pany = e.button.y;
-                std::cout << panx << " " << pany << std::endl;
+            }
+
+            if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT) {
+
+                // DEBUG
+                std::cout << xmin << " " << ymin << " " << scale << std::endl;
             }
 
             if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT && isPanning) {
