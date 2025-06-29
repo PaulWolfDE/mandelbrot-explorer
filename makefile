@@ -1,0 +1,14 @@
+CC      := g++
+CFLAGS  := -Wall -std=c++20 $(shell pkg-config --cflags sdl2)
+LDFLAGS := $(shell pkg-config --libs sdl2)
+SRC     := $(wildcard src/*.cpp)
+OUT     := build/app.exe
+
+all: $(OUT)
+
+$(OUT): $(SRC)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+
+clean:
+	rm -rf build
+.PHONY: all clean
