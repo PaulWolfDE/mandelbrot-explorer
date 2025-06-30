@@ -2,14 +2,16 @@
 #include <iostream>
 #include <format>
 #include <cmath>
-#include <complex>
 #include <iomanip>
 #include <thread>
+#include <mutex>
 
 #include "mandelbrot.h"
 
 #define WIDTH 800
 #define HEIGHT 600
+
+std::mutex scale_mutex;
 
 int argb(int a, int r, int g, int b)
 {
@@ -61,6 +63,72 @@ int hsl(float h, float s, float l)
     return argb(255, r*255, g*255, b*255);
 }
 
+/**
+ * Bilinear interpolation
+ * source: https://chao-ji.github.io/jekyll/update/2018/07/19/BilinearResize.html
+ *
+ * @param w Width of the original image
+ * @param h Height of the original image
+ * @param width Width of the resized image
+ * @param height Height of the resized image
+ * @param px Image input
+ * @param input_pitch Pitch of input (width of input array)
+ * @param px_out Pointer to output
+ * @param output_pitch Pitch of output
+ */
+void bilinear_interpolation(int w, int h, int width, int height, const Uint32 *px, int input_pitch, Uint32 *px_out, int output_pitch)
+{
+    float x_ratio = static_cast<float>(w-1) / static_cast<float>(width-1);
+    float y_ratio = static_cast<float>(h-1) / static_cast<float>(height-1);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++)
+        {
+            float gx = x_ratio * x;
+            float gy = y_ratio * y;
+
+            int x_l = static_cast<int>(floor(gx));
+            int y_l = static_cast<int>(floor(gy));
+            int x_h = static_cast<int>(ceil(gx));
+            int y_h = static_cast<int>(ceil(gy));
+
+            x_h = std::min(x_h, w-1);
+            y_h = std::min(y_h, h-1);
+
+            float x_weight = gx - x_l;
+            float y_weight = gy - y_l;
+
+            Uint32 A = px[y_l * input_pitch + x_l];
+            Uint32 B = px[y_l * input_pitch + x_h];
+            Uint32 C = px[y_h * input_pitch + x_l];
+            Uint32 D = px[y_h * input_pitch + x_h];
+
+            int a = ((A >> 24) & 0xFF) * (1-x_weight) * (1-y_weight) +
+                    ((B >> 24) & 0xFF) * x_weight * (1-y_weight) +
+                    ((C >> 24) & 0xFF) * (1-x_weight) * y_weight +
+                    ((D >> 24) & 0xFF) * x_weight * y_weight;
+
+            int r = ((A >> 16) & 0xFF) * (1-x_weight) * (1-y_weight) +
+                    ((B >> 16) & 0xFF) * x_weight * (1-y_weight) +
+                    ((C >> 16) & 0xFF) * (1-x_weight) * y_weight +
+                    ((D >> 16) & 0xFF) * x_weight * y_weight;
+
+            int g = ((A >> 8) & 0xFF) * (1-x_weight) * (1-y_weight) +
+                    ((B >> 8) & 0xFF) * x_weight * (1-y_weight) +
+                    ((C >> 8) & 0xFF) * (1-x_weight) * y_weight +
+                    ((D >> 8) & 0xFF) * x_weight * y_weight;
+
+            int b = (A & 0xFF) * (1-x_weight) * (1-y_weight) +
+                    (B & 0xFF) * x_weight * (1-y_weight) +
+                    (C & 0xFF) * (1-x_weight) * y_weight +
+                    (D & 0xFF) * x_weight * y_weight;
+
+            px_out[y * output_pitch + x] = argb(a, r, g, b);
+        }
+    }
+}
+
+
 SDL_Texture *tex;
 SDL_Renderer *ren;
 
@@ -90,7 +158,7 @@ void computeRows(int sy, int n_rows, Uint32 *px, int pitch32)
     }
 }
 
-#define PREVIEW_SCALE (1.0f / 8.0f)
+#define PREVIEW_SCALE (1.0f / 4.0f)
 
 void render_preview()
 {
@@ -98,6 +166,9 @@ void render_preview()
     int pitch;
     SDL_LockTexture(tex, nullptr, &pixels, &pitch);
     Uint32 *px = (Uint32*)pixels;
+
+    Uint32 px_temp[WIDTH*HEIGHT];
+
     int pitch32 = pitch / 4;
 
     int w = static_cast<int>(WIDTH*PREVIEW_SCALE);
@@ -116,9 +187,12 @@ void render_preview()
 
             if (n == max) color = argb(255, 0, 0, 0);
 
-            px[y * pitch32 + x] = color;
+            px_temp[y * pitch32 + x] = color;
         }
     }
+
+    bilinear_interpolation(w, h, WIDTH, HEIGHT, px_temp, pitch32, px, pitch32);
+
     SDL_UnlockTexture(tex);
     SDL_RenderCopy(ren, tex, nullptr, nullptr);
     SDL_RenderPresent(ren);
@@ -128,8 +202,8 @@ void render_preview()
 
 void repaint()
 {
-    render_preview();
-    return;
+    // render_preview();
+
     void *pixels;
     int pitch;
     SDL_LockTexture(tex, nullptr, &pixels, &pitch);
@@ -173,8 +247,8 @@ int main(int argc, char *argv[])
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = false;
 
-            if (e.type == SDL_MOUSEWHEEL) {
-
+            if (e.type == SDL_MOUSEWHEEL)
+            {
                 int mx, my;
                 SDL_GetMouseState(&mx, &my);
 
@@ -188,9 +262,21 @@ int main(int argc, char *argv[])
                 xmin = px-dx;
                 ymin = py-dy;
 
+                std::lock_guard lock(scale_mutex);
                 scale *= z;
 
-                repaint();
+                render_preview();
+                long double prev_scale = scale;
+
+                auto _repaint = [](long double prev_scale) {
+                    // wait 1 s
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    std::lock_guard lock(scale_mutex);
+                    if (prev_scale == scale) repaint();
+                };
+
+                std::thread t(_repaint, prev_scale);
+                t.detach();
             }
 
             if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT && !isPanning) {
