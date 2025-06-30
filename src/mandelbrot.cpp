@@ -1,7 +1,7 @@
 #include <cmath>
 #include <iomanip>
 
-#define MAX_ITERATIONS 200
+#define MAX_ITERATIONS 256
 
 int mandelbrot_iterations(long double cx, long double cy)
 {
