@@ -7,61 +7,12 @@
 #include <mutex>
 
 #include "mandelbrot.h"
+#include "color.h"
 
 #define WIDTH 800
 #define HEIGHT 600
 
 std::mutex scale_mutex;
-
-int argb(int a, int r, int g, int b)
-{
-    return (a << 24) | (r << 16) | (g << 8) | b;
-}
-
-/**
- * HSL to RGB conversion
- * Source: https://www.niwa.nu/2013/05/math-behind-colorspace-conversions-rgb-hsl/
- *
- * @param h Hue 0..360
- * @param s Saturation 0..1
- * @param l Luminance 0..1
- * @return color in int format
- */
-int hsl(float h, float s, float l)
-{
-    if (s == 0.0f) return argb(255, l*255, l*255, l*255);
-
-    float r, g, b;
-    float third = 1.0f / 3.0f;
-
-    float t1 = l < 0.5f ? l*(1+s) : l+s-l*s;
-    float t2 = 2.0f*l-t1;
-
-    float relH = h/360.0f;
-
-    float tr = relH + third, tg = relH, tb = relH - third;
-
-    if (tr > 1.0f) tr -= 1.0f;
-    if (tr < 0.0f) tr += 1.0f;
-    if (tg > 1.0f) tg -= 1.0f;
-    if (tg < 0.0f) tg += 1.0f;
-    if (tb > 1.0f) tb -= 1.0f;
-    if (tb < 0.0f) tb += 1.0f;
-
-    auto color_chanel = [](float t, float t1, float t2, float third){
-
-        if (6.0f*t < 1) return t2 + (t1-t2) * 6.0f * t;
-        if (2.0f*t < 1) return t1;
-        if (3.0f*t < 2) return t2 + (t1-t2) * (2.0f*third - t) * 6.0f;
-        return t2;
-    };
-
-    r = color_chanel(tr, t1, t2, third);
-    g = color_chanel(tg, t1, t2, third);
-    b = color_chanel(tb, t1, t2, third);
-
-    return argb(255, r*255, g*255, b*255);
-}
 
 /**
  * Bilinear interpolation
@@ -103,11 +54,6 @@ void bilinear_interpolation(int w, int h, int width, int height, const Uint32 *p
             Uint32 C = px[y_h * input_pitch + x_l];
             Uint32 D = px[y_h * input_pitch + x_h];
 
-            int a = ((A >> 24) & 0xFF) * (1-x_weight) * (1-y_weight) +
-                    ((B >> 24) & 0xFF) * x_weight * (1-y_weight) +
-                    ((C >> 24) & 0xFF) * (1-x_weight) * y_weight +
-                    ((D >> 24) & 0xFF) * x_weight * y_weight;
-
             int r = ((A >> 16) & 0xFF) * (1-x_weight) * (1-y_weight) +
                     ((B >> 16) & 0xFF) * x_weight * (1-y_weight) +
                     ((C >> 16) & 0xFF) * (1-x_weight) * y_weight +
@@ -123,7 +69,7 @@ void bilinear_interpolation(int w, int h, int width, int height, const Uint32 *p
                     (C & 0xFF) * (1-x_weight) * y_weight +
                     (D & 0xFF) * x_weight * y_weight;
 
-            px_out[y * output_pitch + x] = argb(a, r, g, b);
+            px_out[y * output_pitch + x] = Color(r, g, b).argb();
         }
     }
 }
@@ -147,13 +93,13 @@ void computeRows(int sy, int n_rows, Uint32 *px, int pitch32)
             int n = mandelbrot_iterations(xmin + static_cast<long double>(x) / scale, ymin + static_cast<long double>(y) / scale);
 
             const int c = 15, max = 256;
-            Uint32 color = hsl(static_cast<float>((c * n / 4) % 360),
+            Color color(static_cast<int>(static_cast<float>((c * n / 4) % 360)),
                    0.25f + static_cast<float>(n) / static_cast<float>(max) / 2.0f,
                    0.5f);
 
-            if (n == max) color = argb(255, 0, 0, 0);
+            if (n == max) color = Color(0, 0, 0);
 
-            px[y * pitch32 + x] = color;
+            px[y * pitch32 + x] = color.argb();
         }
     }
 }
@@ -181,13 +127,13 @@ void render_preview()
             int n = mandelbrot_iterations(xmin + static_cast<long double>(x) / s, ymin + static_cast<long double>(y) / s);
 
             const int c = 15, max = 256;
-            Uint32 color = hsl(static_cast<float>((c * n / 4) % 360),
+            Color color(static_cast<int>(static_cast<float>((c * n / 4) % 360)),
                    0.25f + static_cast<float>(n) / static_cast<float>(max) / 2.0f,
                    0.5f);
 
-            if (n == max) color = argb(255, 0, 0, 0);
+            if (n == max) color = Color(0, 0, 0);
 
-            px_temp[y * pitch32 + x] = color;
+            px_temp[y * pitch32 + x] = color.argb();
         }
     }
 
