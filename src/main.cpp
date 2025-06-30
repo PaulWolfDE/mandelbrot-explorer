@@ -90,10 +90,46 @@ void computeRows(int sy, int n_rows, Uint32 *px, int pitch32)
     }
 }
 
+#define PREVIEW_SCALE (1.0f / 8.0f)
+
+void render_preview()
+{
+    void *pixels;
+    int pitch;
+    SDL_LockTexture(tex, nullptr, &pixels, &pitch);
+    Uint32 *px = (Uint32*)pixels;
+    int pitch32 = pitch / 4;
+
+    int w = static_cast<int>(WIDTH*PREVIEW_SCALE);
+    int h = static_cast<int>(HEIGHT*PREVIEW_SCALE);
+    long double s = scale*PREVIEW_SCALE;
+
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+
+            int n = mandelbrot_iterations(xmin + static_cast<long double>(x) / s, ymin + static_cast<long double>(y) / s);
+
+            const int c = 15, max = 256;
+            Uint32 color = hsl(static_cast<float>((c * n / 4) % 360),
+                   0.25f + static_cast<float>(n) / static_cast<float>(max) / 2.0f,
+                   0.5f);
+
+            if (n == max) color = argb(255, 0, 0, 0);
+
+            px[y * pitch32 + x] = color;
+        }
+    }
+    SDL_UnlockTexture(tex);
+    SDL_RenderCopy(ren, tex, nullptr, nullptr);
+    SDL_RenderPresent(ren);
+}
+
 #define N_THREADS 8
 
 void repaint()
 {
+    render_preview();
+    return;
     void *pixels;
     int pitch;
     SDL_LockTexture(tex, nullptr, &pixels, &pitch);
