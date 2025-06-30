@@ -1,6 +1,9 @@
 #include <SDL.h>
 #include <iostream>
+#include <format>
 #include <cmath>
+#include <complex>
+#include <iomanip>
 #include <thread>
 
 #include "mandelbrot.h"
@@ -17,7 +20,7 @@ SDL_Texture *tex;
 SDL_Renderer *ren;
 
 // scale: how many pixels represent 1 coordinate
-long double xmin = -2.5, ymin = -1.5, scale = 200, zoom_factor = 1.1, zoom_factor_inv = 1.0L / zoom_factor;
+long double xmin = -2.5L, ymin = -1.5L, scale = 200L, zoom_factor = 1.1L, zoom_factor_inv = 1.0L / zoom_factor;
 
 int panx=0, pany=0;
 bool isPanning = false;
@@ -108,8 +111,12 @@ int main(int argc, char *argv[])
 
             if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_RIGHT) {
 
+                int mx, my;
+                SDL_GetMouseState(&mx, &my);
+                long double px = xmin + static_cast<long double>(mx) / scale;
+                long double py = ymin + static_cast<long double>(my) / scale;
                 // DEBUG
-                std::cout << xmin << " " << ymin << " " << scale << std::endl;
+                std::cout << std::setprecision(20) << px << " " << py << std::endl;
             }
 
             if (e.type == SDL_MOUSEBUTTONUP && e.button.button == SDL_BUTTON_LEFT && isPanning) {
