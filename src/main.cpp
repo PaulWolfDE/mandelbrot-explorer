@@ -92,10 +92,8 @@ void computeRows(int sy, int n_rows, Uint32 *px, int pitch32)
 
             int n = mandelbrot_iterations(xmin + static_cast<long double>(x) / scale, ymin + static_cast<long double>(y) / scale);
 
-            const int c = 15, max = 256;
-            Color color(static_cast<int>(static_cast<float>((c * n / 4) % 360)),
-                   0.25f + static_cast<float>(n) / static_cast<float>(max) / 2.0f,
-                   0.5f);
+            const int max = 256;
+            Color color(n, max, HSL);
 
             if (n == max) color = Color(0, 0, 0);
 
@@ -126,10 +124,8 @@ void render_preview()
 
             int n = mandelbrot_iterations(xmin + static_cast<long double>(x) / s, ymin + static_cast<long double>(y) / s);
 
-            const int c = 15, max = 256;
-            Color color(static_cast<int>(static_cast<float>((c * n / 4) % 360)),
-                   0.25f + static_cast<float>(n) / static_cast<float>(max) / 2.0f,
-                   0.5f);
+            const int max = 256;
+            Color color(n, max, HSL);
 
             if (n == max) color = Color(0, 0, 0);
 

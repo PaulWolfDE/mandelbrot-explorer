@@ -41,6 +41,20 @@ Color::Color(int h, float s, float l)
     b_ = color_chanel(tb, t1, t2, third)*255;
 }
 
+Color::Color(int n, int max, color_scheme scheme)
+{
+    switch(scheme) {
+    case HSL:{
+        Color c(static_cast<int>(static_cast<float>((contrast * n / 4) % 360)),
+                   0.25f + static_cast<float>(n) / static_cast<float>(max) / 2.0f,
+                   0.5f);
+        *this = c;
+         break;
+    } default:
+        r_ = g_ = b_ = 0;
+    }
+}
+
 
 int Color::r() const { return r_; }
 int Color::g() const { return g_; }

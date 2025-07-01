@@ -1,7 +1,13 @@
 #ifndef COLOR_H
 #define COLOR_H
 
-const float third = 1.0f / 3.0f;
+constexpr float third   = 1.0f / 3.0f;
+constexpr int contrast  = 15;
+
+enum color_scheme
+{
+    HSL, RGB, BW
+};
 
 class Color {
 
@@ -9,6 +15,7 @@ public:
     Color(int r, int g, int b);
     Color(float r, float g, float b);
     Color(int h, float s, float l);
+    Color(int n, int max, color_scheme scheme);
 
     int r() const;
     int g() const;
