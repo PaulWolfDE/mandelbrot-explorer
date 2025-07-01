@@ -77,8 +77,13 @@ TTF_Font *s = nullptr;
 SDL_Texture *text_tex = nullptr;
 SDL_Rect text_dst = {0+5, HEIGHT-14-5, 0, 0};
 
-void render_coordinates(long double cx, long double cy)
+void render_coordinates()
 {
+    int mx, my;
+    SDL_GetMouseState(&mx, &my);
+    long double cx = xmin + static_cast<long double>(mx) / scale;
+    long double cy = ymin + static_cast<long double>(my) / scale;
+
     if (s == nullptr) s = TTF_OpenFont(std::format("{}cmunss.ttf", SDL_GetBasePath()).c_str(), 14);;
     if (text_tex) SDL_DestroyTexture(text_tex);
 
@@ -119,6 +124,8 @@ void repaint()
     SDL_UpdateTexture(tex, nullptr, fb, WIDTH*4);
     SDL_RenderCopy(ren, tex, nullptr, nullptr);
     SDL_RenderPresent(ren);
+
+    render_coordinates();
 }
 
 int main(int argc, char *argv[])
@@ -202,13 +209,7 @@ int main(int argc, char *argv[])
             }
 
             if (e.type == SDL_MOUSEMOTION) {
-
-                int mx, my;
-                SDL_GetMouseState(&mx, &my);
-                long double px = xmin + static_cast<long double>(mx) / scale;
-                long double py = ymin + static_cast<long double>(my) / scale;
-
-                render_coordinates(px, py);
+                render_coordinates();
             }
         }
     }
