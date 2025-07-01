@@ -43,6 +43,11 @@ Color::Color(int h, float s, float l)
 
 Color::Color(int n, int max, color_scheme scheme)
 {
+    if (n == max) {
+        r_ = g_ = b_ = 0;
+        return;
+    }
+
     switch(scheme) {
     case HSL:{
         Color c(static_cast<int>(static_cast<float>((contrast * n / 4) % 360)),
