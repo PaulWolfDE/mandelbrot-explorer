@@ -1,5 +1,7 @@
 #include "image_wizard.h"
 
+#include <algorithm>
+
 #include "color.h"
 
 /**
