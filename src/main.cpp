@@ -44,34 +44,6 @@ void computeRows(int sy, int n_rows, Uint32 *px, int pitch32)
     }
 }
 
-#define PREVIEW_SCALE (1.0f / 4.0f)
-
-void render_preview()
-{
-    int w = static_cast<int>(WIDTH*PREVIEW_SCALE);
-    int h = static_cast<int>(HEIGHT*PREVIEW_SCALE);
-    auto *preview = new Uint32[w*h];
-
-    long double s = scale*PREVIEW_SCALE;
-
-    for (int x = 0; x < w; x++) {
-        for (int y = 0; y < h; y++) {
-
-            int n = mandelbrot_iterations(xmin + static_cast<long double>(x) / s, ymin + static_cast<long double>(y) / s, MAX_ITERATIONS);
-
-            Color color(n, MAX_ITERATIONS, HSL);
-
-            preview[y * w + x] = color.argb();
-        }
-    }
-
-    auto *px = new Uint32[WIDTH*HEIGHT];
-    bilinear_interpolation(w, h, WIDTH, HEIGHT, preview, w, px, WIDTH);
-
-    SDL_UpdateTexture(tex, nullptr, px, WIDTH*4);
-    SDL_RenderCopy(ren, tex, nullptr, nullptr);
-    SDL_RenderPresent(ren);
-}
 
 TTF_Font *s = nullptr;
 SDL_Texture *text_tex = nullptr;
@@ -108,6 +80,37 @@ void render_coordinates()
     SDL_RenderCopy(ren, tex, nullptr, nullptr);
     SDL_RenderCopy(ren, text_tex, nullptr, &text_dst);
     SDL_RenderPresent(ren);
+}
+
+#define PREVIEW_SCALE (1.0f / 4.0f)
+
+void render_preview()
+{
+    int w = static_cast<int>(WIDTH*PREVIEW_SCALE);
+    int h = static_cast<int>(HEIGHT*PREVIEW_SCALE);
+    auto *preview = new Uint32[w*h];
+
+    long double s = scale*PREVIEW_SCALE;
+
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+
+            int n = mandelbrot_iterations(xmin + static_cast<long double>(x) / s, ymin + static_cast<long double>(y) / s, MAX_ITERATIONS);
+
+            Color color(n, MAX_ITERATIONS, HSL);
+
+            preview[y * w + x] = color.argb();
+        }
+    }
+
+    auto *px = new Uint32[WIDTH*HEIGHT];
+    bilinear_interpolation(w, h, WIDTH, HEIGHT, preview, w, px, WIDTH);
+
+    SDL_UpdateTexture(tex, nullptr, px, WIDTH*4);
+    SDL_RenderCopy(ren, tex, nullptr, nullptr);
+    SDL_RenderPresent(ren);
+
+    render_coordinates();
 }
 
 #define N_THREADS 8
