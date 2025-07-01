@@ -49,13 +49,18 @@ Color::Color(int n, int max, color_scheme scheme)
     }
 
     switch(scheme) {
-    case HSL:{
-        Color c(static_cast<int>(static_cast<float>((contrast * n / 4) % 360)),
+    case HSL: {
+            Color c(static_cast<int>(static_cast<float>((contrast * n / 4) % 360)),
                    0.25f + static_cast<float>(n) / static_cast<float>(max) / 2.0f,
                    0.5f);
-        *this = c;
-         break;
-    } default:
+            *this = c;
+            break;
+    } case BW: {
+            Color c(0, 0., static_cast<float>(n)/static_cast<float>(max));
+            *this = c;
+            break;
+    }
+    default:
         r_ = g_ = b_ = 0;
     }
 }
